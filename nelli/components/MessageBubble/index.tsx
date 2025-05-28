@@ -10,7 +10,6 @@ interface MessageBubbleProps {
 // Helper function to render text with code blocks
 const renderMessageContent = (content: string) => {
   const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
-  const inlineCodeRegex = /`([^`]+)`/g;
 
   let lastIndex = 0;
   const elements: JSX.Element[] = [];
@@ -135,13 +134,13 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       <div
-        className={`max-w-4xl rounded-lg px-4 py-2 ${
+        className={`max-w-1/2 rounded-lg px-4 py-2 ${
           isUser
             ? "bg-blue-600 text-white"
             : "bg-white border border-gray-200 text-gray-900"
         }`}
       >
-        <div className="prose prose-sm max-w-none">
+        <div className="prose prose-sm">
           {renderMessageContent(message.content)}
         </div>
         <div className="text-xs opacity-70 mt-2">
