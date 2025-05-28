@@ -121,7 +121,7 @@ export default function ChatInterface({
   }
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col max-h-screen">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {conversation.messages.map((message) => (
@@ -151,7 +151,6 @@ export default function ChatInterface({
 
         <div ref={messagesEndRef} />
       </div>
-
       {/* Input Area */}
       <div className="border-t border-gray-200 bg-white p-4">
         <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
