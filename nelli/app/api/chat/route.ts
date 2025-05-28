@@ -11,14 +11,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Make request to Ollama
     const ollamaResponse = await fetch("http://localhost:11434/api/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama2", // Change this to your preferred model
+        model: "gemma3:12b",
         prompt: message,
         stream: false,
       }),
