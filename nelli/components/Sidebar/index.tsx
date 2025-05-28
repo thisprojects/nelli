@@ -30,7 +30,7 @@ export default function Sidebar({
       {/* Header */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between">
-          {!collapsed && <h1 className="text-lg font-semibold">Ollama Chat</h1>}
+          {!collapsed && <h1 className="text-lg font-semibold">Nelli</h1>}
           <button
             onClick={onToggleCollapse}
             className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
