@@ -15,8 +15,11 @@ export default function ChatInterface({
 }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,7 +27,7 @@ export default function ChatInterface({
 
   useEffect(() => {
     scrollToBottom();
-  }, [conversation?.messages]);
+  }, [conversation?.messages, streamingMessage]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +42,15 @@ export default function ChatInterface({
 
     const updatedMessages = [...conversation.messages, userMessage];
     onUpdateConversation(conversation.id, updatedMessages);
+
     setInput("");
     setLoading(true);
+
+    setIsStreaming(true);
+    setStreamingMessage("");
+
+    // Create abort controller for canceling requests
+    abortControllerRef.current = new AbortController();
 
     try {
       const response = await fetch("/api/chat", {
@@ -52,27 +62,69 @@ export default function ChatInterface({
           message: input.trim(),
           conversationId: conversation.id,
         }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let fullMessage = "";
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: data.message,
-        role: "assistant",
-        timestamp: new Date(),
-      };
+      if (!reader) {
+        throw new Error("No response body");
+      }
 
-      onUpdateConversation(conversation.id, [
-        ...updatedMessages,
-        assistantMessage,
-      ]);
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n").filter((line) => line.trim());
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.error) {
+                throw new Error(data.error);
+              }
+
+              if (data.token) {
+                fullMessage += data.token;
+                setStreamingMessage(fullMessage);
+              }
+
+              if (data.done) {
+                const assistantMessage: Message = {
+                  id: (Date.now() + 1).toString(),
+                  content: fullMessage,
+                  role: "assistant",
+                  timestamp: new Date(),
+                };
+
+                onUpdateConversation(conversation.id, [
+                  ...updatedMessages,
+                  assistantMessage,
+                ]);
+
+                setStreamingMessage("");
+                setIsStreaming(false);
+                return;
+              }
+            } catch (parseError) {
+              console.error("Error parsing streaming data:", parseError);
+            }
+          }
+        }
+      }
     } catch (error) {
       console.error("Error sending message:", error);
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content:
@@ -80,9 +132,13 @@ export default function ChatInterface({
         role: "assistant",
         timestamp: new Date(),
       };
+
       onUpdateConversation(conversation.id, [...updatedMessages, errorMessage]);
+      setStreamingMessage("");
+      setIsStreaming(false);
     } finally {
       setLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -92,6 +148,15 @@ export default function ChatInterface({
       handleSubmit(e);
     }
   };
+
+  // Cancel streaming if component unmounts or user starts new message
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   if (!conversation) {
     return (
@@ -128,7 +193,20 @@ export default function ChatInterface({
           <MessageBubble key={message.id} message={message} />
         ))}
 
-        {loading && (
+        {/* Show streaming message */}
+        {isStreaming && streamingMessage && (
+          <div className="flex justify-start mb-4">
+            <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 max-w-1/2">
+              <div className="whitespace-pre-wrap">
+                {streamingMessage}
+                <span className="inline-block w-2 h-5 bg-gray-400 ml-1 animate-pulse"></span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show loading state when starting stream */}
+        {loading && !isStreaming && (
           <div className="flex justify-start mb-4">
             <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 max-w-3xl">
               <div className="flex items-center space-x-2">
