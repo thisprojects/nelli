@@ -163,7 +163,7 @@ export default function ChatInterface({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex items-center justify-center">
         <div className="text-center text-gray-500">
           <svg
             className="w-16 h-16 mx-auto mb-4 text-gray-300"
@@ -189,17 +189,17 @@ export default function ChatInterface({
   }
 
   return (
-    <div className="flex-1 flex flex-col max-h-screen">
+    <div className="flex flex-col max-h-screen">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="overflow-y-auto p-6">
         {conversation.messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
 
         {/* Show streaming message */}
         {isStreaming && streamingMessage && (
-          <div className="flex justify-start mb-4">
-            <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 max-w-1/2">
+          <div className="flex justify-center mb-4">
+            <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 w-full">
               <div className="whitespace-pre-wrap">
                 {streamingMessage}
                 <span className="inline-block w-2 h-5 bg-gray-400 ml-1 animate-pulse"></span>
