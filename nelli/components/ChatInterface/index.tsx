@@ -45,7 +45,6 @@ export default function ChatInterface({
 
     setInput("");
     setLoading(true);
-
     setIsStreaming(true);
     setStreamingMessage("");
 
@@ -59,7 +58,11 @@ export default function ChatInterface({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: input.trim(),
+          // Send the entire conversation history instead of just the current message
+          messages: updatedMessages.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
           conversationId: conversation.id,
         }),
         signal: abortControllerRef.current.signal,
